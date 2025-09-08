@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Analyzer - AI Powered Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 71, 133, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(46, 213, 115, 0.2) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -20px) rotate(1deg); }
+            66% { transform: translate(20px, -10px) rotate(-1deg); }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #ff4785 50%, #2ed573 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            letter-spacing: -2px;
+            animation: gradientShift 5s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header p {
+            color: #8892b0;
+            font-size: 1.2rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            color: #8892b0;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #2ed573;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Input Section */
+        .input-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .input-label::before {
+            content: '✨';
+            font-size: 1.3rem;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 150px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-family: inherit;
+            color: #fff;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .text-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Analyze Button */
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .analyze-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .analyze-btn:hover::before {
+            left: 100%;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Results Section */
+        .results {
+            display: none;
+            animation: slideUp 0.6s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sentiment-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sentiment-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .sentiment-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .sentiment-text {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .confidence-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .joy-result { color: #2ed573; text-shadow: 0 0 30px rgba(46, 213, 115, 0.5); }
+        .sadness-result { color: #3b82f6; text-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
+        .anger-result { color: #ff4757; text-shadow: 0 0 30px rgba(255, 71, 87, 0.5); }
+        .fear-result { color: #a855f7; text-shadow: 0 0 30px rgba(168, 85, 247, 0.5); }
+        .surprise-result { color: #f59e0b; text-shadow: 0 0 30px rgba(245, 158, 11, 0.5); }
+        .disgust-result { color: #10b981; text-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+        .neutral-result { color: #8892b0; text-shadow: 0 0 30px rgba(136, 146, 176, 0.5); }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 50px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+
+        /* Emotion Cards */
+        .emotion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .emotion-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .emotion-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+
+        .emotion-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .emotion-emoji {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .emotion-name {
+            font-size: 0.8rem;
+            color: #8892b0;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+
+        .emotion-score {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Examples Section */
+        .examples {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 30px;
+        }
+
+        .examples h3 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .example-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            color: #667eea;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .example-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .glass-card {
+                padding: 25px;
+            }
+
+            .sentiment-text {
+                font-size: 2rem;
+            }
+
+            .emotion-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Emotion Analyzer</h1>
+            <p>Advanced AI-Powered Emotional Intelligence Detection</p>
+            <div class="api-status" id="apiStatus">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Connecting to API...</span>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <label class="input-label" for="textInput">
+                Analyze your text's emotional tone
+            </label>
+            <textarea
+                id="textInput"
+                class="text-input"
+                placeholder="Enter your text here... Could be a review, tweet, message, or any text you want to analyze for emotions"
+            ></textarea>
+            <button id="analyzeBtn" class="analyze-btn">
+                🚀 Analyze Emotions
+            </button>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Processing advanced emotion analysis...</p>
+        </div>
+
+        <div id="results" class="results">
+            <div class="glass-card">
+                <div class="sentiment-display">
+                    <div id="dominantEmoji" class="sentiment-emoji"></div>
+                    <div id="dominantText" class="sentiment-text"></div>
+                    <div id="confidenceText" class="confidence-text"></div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top: 20px;">
+                    <h3 style="color: #fff; margin-bottom: 20px; text-align: center;">🎭 Emotion Breakdown</h3>
+                    <div id="emotionGrid" class="emotion-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="examples">
+            <h3>💡 Quick Examples</h3>
+            <button class="example-btn" onclick="setExample('This product exceeded all my expectations! The quality is outstanding and the customer service was incredibly helpful.')">😊 Happy</button>
+            <button class="example-btn" onclick="setExample('The presentation covered the main points. The information was delivered as expected.')">😐 Neutral</button>
+            <button class="example-btn" onclick="setExample('I am extremely disappointed with this service. The quality was poor and support was unresponsive.')">😢 Sad</button>
+            <button class="example-btn" onclick="setExample('I cannot believe they did this to me! This is absolutely infuriating and unacceptable!')">😠 Angry</button>
+            <button class="example-btn" onclick="setExample('I feel overwhelmed by all the deadlines. Everything is piling up and I cannot keep up.')">😨 Fearful</button>
+            <button class="example-btn" onclick="setExample('I cannot believe this happened! This is absolutely shocking and unexpected!')">😲 Surprised</button>
+            <button class="example-btn" onclick="setExample('This movie was disgusting and revolting. I could not watch it.')">🤢 Disgusted</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        const emotionEmojis = {
+            'joy': '😊',
+            'sadness': '😢',
+            'anger': '😠',
+            'fear': '😨',
+            'surprise': '😲',
+            'disgust': '🤢',
+            'neutral': '😐'
+        };
+
+        const emotionColors = {
+            'joy': '#2ed573',
+            'sadness': '#3b82f6',
+            'anger': '#ff4757',
+            'fear': '#a855f7',
+            'surprise': '#f59e0b',
+            'disgust': '#10b981',
+            'neutral': '#8892b0'
+        };
+
+        // API Status Management
+        async function checkAPIStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    statusIndicator.classList.add('connected');
+                    statusText.textContent = 'API Connected';
+                    return true;
+                } else {
+                    throw new Error('API not responding');
+                }
+            } catch (error) {
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'API Disconnected';
+                return false;
+            }
+        }
+
+        // Error Display
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Results Display
+        function displayResults(analysis) {
+            const results = document.getElementById('results');
+            const dominantEmoji = document.getElementById('dominantEmoji');
+            const dominantText = document.getElementById('dominantText');
+            const confidenceText = document.getElementById('confidenceText');
+            const progressFill = document.getElementById('progressFill');
+            const emotionGrid = document.getElementById('emotionGrid');
+
+            // Get dominant emotion info
+            const dominantEmotion = analysis.emotion.name;
+            const dominantScore = Math.max(...Object.values(analysis.emotion_breakdown));
+
+            // Update sentiment display with dominant emotion
+            dominantEmoji.textContent = analysis.emotion.emoji;
+            dominantText.textContent = dominantEmotion.toUpperCase();
+            dominantText.className = `sentiment-text ${dominantEmotion}-result`;
+            confidenceText.textContent = `${dominantScore}% Confidence`;
+            confidenceText.className = `confidence-text ${dominantEmotion}-result`;
+
+            // Update progress bar
+            progressFill.style.width = `${dominantScore}%`;
+            const emotionColor = emotionColors[dominantEmotion] || '#8892b0';
+            progressFill.style.background = `linear-gradient(90deg, ${emotionColor}88, ${emotionColor})`;
+
+            // Update emotion breakdown
+            emotionGrid.innerHTML = '';
+            Object.entries(analysis.emotion_breakdown).forEach(([emotion, score]) => {
+                if (score > 0) {
+                    const emotionCard = document.createElement('div');
+                    emotionCard.className = 'emotion-card';
+                    emotionCard.style.color = emotionColors[emotion] || '#8892b0';
+                    emotionCard.innerHTML = `
+                        <div class="emotion-emoji">${emotionEmojis[emotion] || '😐'}</div>
+                        <div class="emotion-name">${emotion}</div>
+                        <div class="emotion-score">${score}%</div>
+                    `;
+                    emotionGrid.appendChild(emotionCard);
+                }
+            });
+
+            // Show results
+            results.style.display = 'block';
+            results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Set Example Text
+        function setExample(text) {
+            document.getElementById('textInput').value = text;
+            document.getElementById('textInput').focus();
+        }
+
+        // Main analyze function with backend integration
+        document.getElementById('analyzeBtn').addEventListener('click', async function() {
+            const textInput = document.getElementById('textInput');
+            const loading = document.getElementById('loading');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const errorElement = document.getElementById('errorMessage');
+
+            const text = textInput.value.trim();
+
+            if (!text) {
+                showError('Please enter some text to analyze!');
+                textInput.focus();
+                return;
+            }
+
+            // Check API status first
+            const isAPIConnected = await checkAPIStatus();
+            if (!isAPIConnected) {
+                showError('API is not connected. Please ensure the backend server is running on port 8000.');
+                return;
+            }
+
+            // Show loading state
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🔄 Analyzing...';
+            errorElement.style.display = 'none';
+
+            try {
+                // Send request to backend
+                const response = await fetch(`${API_BASE_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const analysis = await response.json();
+                displayResults(analysis);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error analyzing text: ${error.message}. Please try again.`);
+            } finally {
+                // Hide loading state
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🚀 Analyze Emotions';
+            }
+        });
+
+        // Allow Ctrl+Enter to trigger analysis
+        document.getElementById('textInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                document.getElementById('analyzeBtn').click();
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('textInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 400) + 'px';
+        });
+
+        // Initialize API status check on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAPIStatus();
+            // Check API status every 30 seconds
+            setInterval(checkAPIStatus, 30000);
+        });
+    </script>
+</body>
+</html>
