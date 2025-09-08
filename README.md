@@ -21,16 +21,6 @@ Built with **FastAPI (backend)**, **Sentence Transformers (NLP model)**, and a m
 
 ---
 
-## 📂 Project Structure
-Emotion_Analyser/
-│── index.html # Frontend (UI + JavaScript logic)
-│── main.py # FastAPI backend server
-│── nlp.py # NLP engine with Sentence Transformer
-│── README.md # Project documentation
-
-
----
-
 
 👩‍💻 Author
 
